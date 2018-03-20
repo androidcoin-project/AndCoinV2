@@ -1357,8 +1357,7 @@ static CBigNum GetProofOfStakeLimit(int nHeight)
 // miner's coin base reward
 static const int64_t nSubsidyGenesisBlock = 5 * COIN;
 static const int64_t nSubsidyInitialBlock = 500000 * COIN; // for share holder 100k, 100k for bounties, 300k for swap AndCoin to AndCoin-v2
-static const int64_t nSubsidyBase = 0.625 * COIN;
-static const int64_t nSubsidyBase2ndYear = 0.15625 * COIN;
+static const int64_t nSubsidyBase = 0.078125 * COIN;
 
 static const int nHeightInitialBlock = 1;
 static const int nHeightAntiInstant = 100;
@@ -1379,36 +1378,38 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
     	nSubsidy = 1 * COIN;
         return nSubsidy + nFees;
     }        
-    if (nHeight < nHeightHalfofBlocks) // First Year 
+    if (nHeight < 43800) // first month
     {
-        	if (nHeight < 43800)
-        	{
-        		nSubsidy = nSubsidyGenesisBlock;
-        		return nSubsidy + nFees;
-        	}
-        	if (nHeight < 87600)
-        	{
-        	    nSubsidy = 2.5 * COIN;
-        	    return nSubsidy + nFees;
-        	}
-        	if (nHeight < 131400)
-            {
-        		nSubsidy = 1.25 * COIN;
-        		return nSubsidy + nFees;        	
-            } 
-        	else {
-        		nSubsidy = nSubsidyBase;
-        		nSubsidy >>= (nHeight / 131400); // Cut half every 3 months 0.625, 0.3125, 0.15625 
-        		return nSubsidy + nFees;
-        	}
+        nSubsidy = nSubsidyGenesisBlock;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 87600) // 2 month
+    {
+        nSubsidy = 2.5 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 131400) // 3 month
+    {
+        nSubsidy = 1.25 * COIN;
+        return nSubsidy + nFees;        	
     } 
-    else {
-    // Next year Subsidy is cut in half every 525600 blocks
-    // this is every 12 months
-        nSubsidy = nSubsidyBase2ndYear;
-        nSubsidy >>= (nHeight / 525600); // 0.15625, 0.078125
-
-    return nSubsidy + nFees;
+    if (nHeight < 262800) // 6 month
+    {
+        nSubsidy = 0.625 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 394200) // 9 month
+    {
+        nSubsidy = 0.3125 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 525600) // 1 year
+    {
+       nSubsidy = 0.15625 * COIN;
+       return nSubsidy + nFees;        	
+    } else {
+        nSubsidy = nSubsidyBase; // 0.078125 till last POW
+        return nSubsidy + nFees;
     }
 }
 
@@ -1418,8 +1419,26 @@ int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees)
     // Subsidy is cut in half every 525600 blocks
     // this is every 12 months
     int64_t nSubsidy = STATIC_POS_REWARD;
-    nSubsidy >>= (nHeight / 525600);
-    return nSubsidy + nFees;
+    if (nHeight < 131400) // 3 months
+    {
+    	nSubsidy = 10 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 525600) // first year
+    {
+    	nSubsidy = 5 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 1051200) // 2nd year
+    {
+    	nSubsidy = 2.5 * COIN;
+        return nSubsidy + nFees;
+    }
+    else
+    {
+    	nSubsidy = 1.25 * COIN; // forever 
+        return nSubsidy + nFees;
+    }
 }
 
 static int64_t nTargetTimespan = 60;
@@ -1462,6 +1481,10 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
         if (nActualSpacing < 0){
             nActualSpacing = TARGET_SPACING;
         }
+        if (nActualSpacing > TARGET_SPACING && pindexBest->nHeight >= 1900){
+            nActualSpacing = TARGET_SPACING;
+        }
+
     }
 
     // ppcoin: target change every block
@@ -2026,7 +2049,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         if (!vtx[1].GetCoinAge(txdb, pindex->pprev, nCoinAge))
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString());
 
-        int64_t nCalculatedStakeReward = GetProofOfStakeReward(pindex->pprev, nCoinAge, nFees);
+        int64_t nCalculatedStakeReward = GetProofOfStakeReward(pindex->nHeight, nCoinAge, nFees);
 
         if (nStakeReward > nCalculatedStakeReward)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
@@ -4584,10 +4607,8 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 
     if (nHeight < 131400) {
 	ret = blockValue * 4 / 5; // MN Reward 80%
-    } else if (nHeight >= 131400 && nHeight <= 232800) {
+    } else if (nHeight >= 131400) {
         ret = blockValue / 2; // MN Reward 50%
-    } else if (nHeight > 232800) {
-		ret = blockValue / 4; // MN Reward 25%
-	}
+    }
     return ret;
 }

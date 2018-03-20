@@ -57,9 +57,9 @@ static void getHardcodedSeeds(std::vector<CAddress> &vSeedsOut)
 {
     std::vector<std::string> ips;
     ips.push_back("101.50.1.2");
-    ips.push_back("36.85.144.127");
+    ips.push_back("110.136.77.161");
     ips.push_back("51.15.185.7");
-   // ips.push_back("185.241.53.228");
+    ips.push_back("46.33.231.249");
 	
     const int64_t oneWeek = 7 * 24 * 60 * 60;
     for (size_t i = 0; i < ips.size(); ++i)
@@ -121,9 +121,9 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();  
 	
         vSeeds.push_back(CDNSSeedData("1",  "node.androidcoin.info"));
-        vSeeds.push_back(CDNSSeedData("2",  "36.85.144.127"));
+        vSeeds.push_back(CDNSSeedData("2",  "110.136.77.161"));
         vSeeds.push_back(CDNSSeedData("3",  "51.15.185.7"));
-      //  vSeeds.push_back(CDNSSeedData("4",  "185.241.53.228"));
+        vSeeds.push_back(CDNSSeedData("4",  "46.33.231.249"));
 		
 		convertSeeds(vFixedSeeds, pnSeed, ARRAYLEN(pnSeed), nDefaultPort); 
 		
@@ -133,7 +133,7 @@ public:
         strDarksendPoolDummyAddress = "AWA2jyGJF5KwDkapjndsCbgaimajRjECxN";
 
         nLastPOWBlock = 2628000; // 5 years
-        nPOSStartBlock = 10220; // 7 days after launch
+        nPOSStartBlock = 5220; // BLOCK 5220
     }
 
     virtual const CBlock& GenesisBlock() const { return genesis; }

@@ -48,7 +48,7 @@ Value getsubsidy(const Array& params, bool fHelp)
             "getsubsidy [nTarget]\n"
             "Returns proof-of-work subsidy value for the specified value of target.");
 
-    return (int64_t)GetProofOfStakeReward(pindexBest->pprev, 0, 0);
+    return (uint64_t)(GetProofOfWorkReward(pindexBest->nHeight, 0)/COIN);
 }
 
 Value getstakesubsidy(const Array& params, bool fHelp)
@@ -75,7 +75,7 @@ Value getstakesubsidy(const Array& params, bool fHelp)
     if (!tx.GetCoinAge(txdb, pindexBest, nCoinAge))
         throw JSONRPCError(RPC_MISC_ERROR, "GetCoinAge failed");
 
-    return (uint64_t)GetProofOfStakeReward(pindexBest->pprev, nCoinAge, 0);
+    return (uint64_t)(GetProofOfStakeReward(pindexBest->nHeight, nCoinAge, 0)/COIN);
 }
 
 Value getmininginfo(const Array& params, bool fHelp)
@@ -94,12 +94,12 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("currentblocksize",(uint64_t)nLastBlockSize));
     obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
 
-    //diff.push_back(Pair("proof-of-work",        GetDifficulty()));
-    //diff.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
-    //diff.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
-    obj.push_back(Pair("difficulty",    GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    diff.push_back(Pair("proof-of-work",        GetDifficulty()));
+    diff.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    diff.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
+    obj.push_back(Pair("difficulty",           diff));
 
-    obj.push_back(Pair("blockvalue",    (int64_t)GetProofOfStakeReward(pindexBest->pprev, 0, 0)));
+    obj.push_back(Pair("blockvalue",    (uint64_t)(GetProofOfWorkReward(pindexBest->nHeight, 0)/COIN)));
     obj.push_back(Pair("netmhashps",     GetPoWMHashPS()));
     obj.push_back(Pair("netstakeweight", GetPoSKernelPS()));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
@@ -146,9 +146,22 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     obj.push_back(Pair("weight", (uint64_t)nWeight));
     obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
-
-    obj.push_back(Pair("expectedtime", nExpectedTime));
-
+    if (nExpectedTime < 60)
+    {
+	obj.push_back(Pair("Expected PoS (seconds)", (uint64_t)nExpectedTime));
+    }
+    else if (nExpectedTime < 60*60)
+    {
+	obj.push_back(Pair("Expected PoS (minutes)", (uint64_t)nExpectedTime/60));
+    }
+    else if (nExpectedTime < 24*60*60)
+    {
+	obj.push_back(Pair("Expected PoS (hours)", (uint64_t)nExpectedTime/(60*60)));
+    }
+    else
+    {
+	obj.push_back(Pair("Expected PoS (days)", (uint64_t)nExpectedTime/(60*60*24)));
+    }
     return obj;
 }
 
@@ -500,14 +513,6 @@ Value getblocktemplate(const Array& params, bool fHelp)
             "  \"sizelimit\" : limit of block size\n"
             "  \"bits\" : compressed target of next block\n"
             "  \"height\" : height of the next block\n"
-            "  \"payee\" : \"xxx\",                (string) required payee for the next block\n"
-            "  \"payee_amount\" : n,               (numeric) required amount to pay\n"
-            "  \"votes\" : [\n                     (array) show vote candidates\n"
-            "        { ... }                       (json object) vote candidate\n"
-            "        ,...\n"
-            "  ],\n"
-            "  \"masternode_payments\" : true|false,         (boolean) true, if masternode payments are enabled"
-            "  \"enforce_masternode_payments\" : true|false  (boolean) true, if masternode payments are enforced"
             "See https://en.bitcoin.it/wiki/BIP_0022 for full specification.");
 
     std::string strMode = "template";
