@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>960</width>
-    <height>594</height>
+    <height>618</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -1144,6 +1144,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QLabel" name="labelcheck">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;a href=&quot;https://github.com/androidcoin-project/AndCoinV2/releases&quot;&gt;&lt;span style=&quot; font-weight:600; color:#0000ff;&quot;&gt;Check Wallet Releases&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -1241,8 +1248,21 @@
             </property>
            </widget>
           </item>
+          <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_inv">
+            <property name="styleSheet">
+             <string notr="true">QLabel { color: green;  }</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;http://www.andcoin.top/p/sponsor.html&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Sponsorer Advertisers&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QLabel" name="andcoinlogo">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -1271,6 +1291,7 @@
  </widget>
  <resources>
   <include location="../bitcoin.qrc"/>
+  <include location="../../../../.designer/bitcoin.qrc"/>
  </resources>
  <connections/>
 </ui>
