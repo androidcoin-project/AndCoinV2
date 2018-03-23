@@ -43,7 +43,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
 
     return dDiff;
 }
-double GetPoWHashPS()
+double GetPoWMHashPS() 
 {
      int nPoWInterval = 72;
     int64_t nTargetSpacingWorkMin = 30, nTargetSpacingWork = 30;
@@ -68,9 +68,6 @@ double GetPoWHashPS()
 
 }
 
-double GetPoWMHashPS() {
-    return GetPoWHashPS(120, -1) / 1.e6;
-}
 
 double GetPoSKernelPS()
 {
