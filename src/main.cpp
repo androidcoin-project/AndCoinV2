@@ -1586,10 +1586,13 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     if (pindexLast->nHeight+1 < 1999)
     {
         return GetNextTargetRequired_(pindexLast, fProofOfStake);
+    } 
+    if (pindexLast->nHeight+1 < 2140)
+    {
+	  return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
     }
 
-    // otherwise, use DigiShield
-    return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
+     return GetNextTargetRequired_(pindexLast, fProofOfStake);
 }
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
