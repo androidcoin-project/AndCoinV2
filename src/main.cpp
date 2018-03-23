@@ -1591,8 +1591,10 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     {
 	  return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
     }
-
+    else
+    {
      return GetNextTargetRequired_(pindexLast, fProofOfStake);
+    }
 }
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
