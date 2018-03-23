@@ -43,52 +43,29 @@ double GetDifficulty(const CBlockIndex* blockindex)
 
     return dDiff;
 }
-double GetPoWHashPS(int lookup, int height)
+double GetPoWHashPS()
 {
-    if (pindexBest == NULL)
-        return 0;
-    if (pindexBest->nHeight >= 2628000)
-        return 0;
+     int nPoWInterval = 72;
+    int64_t nTargetSpacingWorkMin = 30, nTargetSpacingWork = 30;
 
-    const CBlockIndex *pindex0 = pindexBest;
+    CBlockIndex* pindex = pindexGenesisBlock;
+    CBlockIndex* pindexPrevWork = pindexGenesisBlock;
 
-    if (height > 0 && height < nBestHeight)
-        pindex0 = FindBlockByHeight(height);
-
-    if (pindex0 == NULL || !pindex0->nHeight)
-        return 0;
-
-    if (lookup > pindex0->nHeight)
-        lookup = pindex0->nHeight;
-
-    const CBlockIndex* pindexPrev = GetLastPoWBlockIndex(pindex0);
-    if (pindexPrev == NULL || !pindexPrev->nHeight) return 0;
-    const CBlockIndex* pindexPrevPrev = GetLastPoWBlockIndex(pindexPrev->pprev);
-    if (pindexPrevPrev == NULL || !pindexPrevPrev->nHeight) return 0;
-
-    int64_t nActualBlockTime = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime(), nActualBlockTimeTot = nActualBlockTime;
-    int64_t nBlockWeight = 1;
-    if (nActualBlockTime < 0) 
+    while (pindex)
     {
-	nActualBlockTimeTot = 0;
-	nBlockWeight = 0;
+        if (pindex->IsProofOfWork())
+        {
+            int64_t nActualSpacingWork = pindex->GetBlockTime() - pindexPrevWork->GetBlockTime();
+            nTargetSpacingWork = ((nPoWInterval - 1) * nTargetSpacingWork + nActualSpacingWork + nActualSpacingWork) / (nPoWInterval + 1);
+            nTargetSpacingWork = max(nTargetSpacingWork, nTargetSpacingWorkMin);
+            pindexPrevWork = pindex;
+        }
+
+        pindex = pindex->pnext;
     }
 
-    for(int i = 1; i < lookup; i++)
-    {
-	pindexPrev = pindexPrevPrev;
-	pindexPrevPrev = GetLastPoWBlockIndex(pindexPrev->pprev);
-	if (pindexPrevPrev == NULL || !pindexPrevPrev->nHeight) break;
-	nActualBlockTime = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
-	if (nActualBlockTime >= 0)
-	{
-	    nActualBlockTimeTot += nActualBlockTime;
-	    nBlockWeight++;
-	}
-    }
-    if (nActualBlockTimeTot == 0 || nBlockWeight == 0) return 0;
-  
-    return GetDifficulty(GetLastPoWBlockIndex(pindex0)) * pow(2.0, 32) / ((double)nActualBlockTimeTot / (double)nBlockWeight);
+    return GetDifficulty() * 4294.967296 / nTargetSpacingWork;
+
 }
 
 double GetPoWMHashPS() {
