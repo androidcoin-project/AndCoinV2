@@ -133,7 +133,7 @@ public:
         strDarksendPoolDummyAddress = "AWA2jyGJF5KwDkapjndsCbgaimajRjECxN";
 
         nLastPOWBlock = 2628000; // 5 years
-        nPOSStartBlock = 5220; // BLOCK 5220
+        nPOSStartBlock = 2200; // BLOCK 2200
     }
 
     virtual const CBlock& GenesisBlock() const { return genesis; }
