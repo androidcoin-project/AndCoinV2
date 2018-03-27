@@ -57,7 +57,7 @@ static void getHardcodedSeeds(std::vector<CAddress> &vSeedsOut)
 {
     std::vector<std::string> ips;
     ips.push_back("101.50.1.2");
-    ips.push_back("36.84.64.103");
+    ips.push_back("118.126.109.104");
    // ips.push_back("51.15.185.7");
    // ips.push_back("46.33.231.249");
 	
@@ -121,7 +121,7 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();  
 	
         vSeeds.push_back(CDNSSeedData("1",  "node.androidcoin.info"));
-        vSeeds.push_back(CDNSSeedData("2",  "36.84.64.103"));
+        vSeeds.push_back(CDNSSeedData("2",  "118.126.109.104"));
       //  vSeeds.push_back(CDNSSeedData("3",  "51.15.185.7"));
       //  vSeeds.push_back(CDNSSeedData("4",  "46.33.231.249"));
 		
