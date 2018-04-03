@@ -1235,7 +1235,7 @@ void BitcoinGUI::updateStakingIcon()
 {
     updateWeight();
 
-    if (nLastCoinStakeSearchInterval && nWeight)
+    if (nLastCoinStakeSearchInterval && nWeight >= 100)
     {
         uint64_t nWeight = this->nWeight;
         uint64_t nNetworkWeight = GetPoSKernelPS();
@@ -1276,6 +1276,8 @@ void BitcoinGUI::updateStakingIcon()
             labelStakingIcon->setToolTip(tr("Not staking because wallet is offline"));
         else if (IsInitialBlockDownload())
             labelStakingIcon->setToolTip(tr("Not staking because wallet is syncing"));
+        else if (nWeight <= 99)
+            labelStakingIcon->setToolTip(tr("Not staking req 1000 mature coins"));
         else if (!nWeight)
             labelStakingIcon->setToolTip(tr("Not staking because you don't have mature coins"));
         else
