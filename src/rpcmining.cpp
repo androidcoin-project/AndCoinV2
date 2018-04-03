@@ -123,6 +123,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     uint64_t nWeight = 0;
     uint64_t nExpectedTime = 0;
+    uint64_t nCoinAge;
     
     if (pwalletMain)
         nWeight = pwalletMain->GetStakeWeight();
@@ -143,7 +144,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(pindexBest, true))));
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
-
+    obj.push_back(Pair("blockvalue",    (uint64_t)(GetProofOfStakeReward(pindexBest->nHeight, nCoinAge, 0)/COIN)));
     obj.push_back(Pair("weight", (uint64_t)nWeight));
     obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
     if (nExpectedTime < 60)

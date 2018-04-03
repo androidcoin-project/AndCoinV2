@@ -32,7 +32,7 @@ int64_t nTransactionFee = MIN_TX_FEE;
 int64_t nReserveBalance = 0;
 int64_t nMinimumInputValue = 0;
 
-static int64_t GetStakeCombineThreshold() { return GetArg("-stakethreshold", 999) * COIN; }
+static int64_t GetStakeCombineThreshold() { return GetArg("-stakethreshold", 100) * COIN; }
 static int64_t GetStakeSplitThreshold() { return 2 * GetStakeCombineThreshold(); }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3326,6 +3326,8 @@ uint64_t CWallet::GetStakeWeight() const
 
     if (nBalance <= nReserveBalance)
         return 0;
+    if (nBalance - nReserveBalance <= 999)
+        return 0;
 
     vector<const CWalletTx*> vwtxPrev;
 
@@ -3372,7 +3374,10 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     // Choose coins to use
     int64_t nBalance = GetBalance();
 
-    if (nBalance <= nReserveBalance || nBalance <= 999)
+    if (nBalance <= nReserveBalance)
+        return false;
+
+    if (nBalance - nReserveBalance <= 999)
         return false;
 
     vector<const CWalletTx*> vwtxPrev;

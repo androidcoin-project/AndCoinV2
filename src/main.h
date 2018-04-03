@@ -32,7 +32,7 @@ static const signed int HARD_FORK_BLOCK = 90000000;
 
 #define INSTANTX_SIGNATURES_REQUIRED           10
 #define INSTANTX_SIGNATURES_TOTAL              15
-
+#define HEIGHT_MAINTAINANCE 210000
 
 class CBlock;
 class CBlockIndex;
@@ -77,6 +77,9 @@ inline int64_t FutureDrift(int64_t nTime) { return nTime + DRIFT; }
 static const unsigned char REJECT_INVALID = 0x10;
 
 inline int64_t GetMNCollateral(int nHeight) { return 20000; }
+
+inline bool IsMaintainance(int nHeight) { return (nHeight == HEIGHT_MAINTAINANCE); }
+inline bool IsMaintainanceOff(int nHeight) { return (nHeight > HEIGHT_MAINTAINANCE); }
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
@@ -707,7 +710,12 @@ public:
 
     uint256 GetPoWHash() const
     {
-     return Hash_A5A(BEGIN(nVersion), END(nNonce), nNonce);
+	    if(nTime<1524589200) { // April 25, 2018 12:00:00 AM GMT+07:00
+		return Hash_A5A(BEGIN(nVersion), END(nNonce), nNonce);
+	    }
+	    else {
+		return Hash_A5A(BEGIN(nVersion), END(nNonce), nNonce);
+	    }
     }
 
     int64_t GetBlockTime() const

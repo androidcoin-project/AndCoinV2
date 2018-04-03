@@ -1368,7 +1368,8 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
     // Base reward.
 
     int64_t nSubsidy = 0 * COIN;
-
+    if (nHeight < 210000) 
+    {
     if (nHeight == nHeightInitialBlock)
     {
         return nSubsidyInitialBlock + nFees;
@@ -1411,6 +1412,27 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
         nSubsidy = nSubsidyBase; // 0.078125 till last POW
         return nSubsidy + nFees;
     }
+	} else {
+
+    if (nHeight < 262800) 
+    {
+        nSubsidy = 0.625 * COIN;
+        return nSubsidy + nFees;
+    }
+    else if (nHeight < 394200) 
+    {
+        nSubsidy = 0.3125 * COIN;
+        return nSubsidy + nFees;
+    }
+    else if (nHeight < 525600) 
+    {
+       nSubsidy = 0.15625 * COIN;
+       return nSubsidy + nFees;        	
+    } else {
+        nSubsidy = nSubsidyBase; // 0.078125 till last POW
+        return nSubsidy + nFees;
+    }
+	}
 }
 
 // miner's coin stake reward
@@ -1419,6 +1441,9 @@ int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees)
     // Subsidy is cut in half every 525600 blocks
     // this is every 12 months
     int64_t nSubsidy = STATIC_POS_REWARD;
+
+       if (nHeight < 210000) 
+       {
     if (nHeight < 131400) // 3 months
     {
     	nSubsidy = 10 * COIN;
@@ -1439,6 +1464,26 @@ int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees)
     	nSubsidy = 1.25 * COIN; // forever 
         return nSubsidy + nFees;
     }
+
+	} else {
+
+    if (nHeight < 220000) // first year
+    {
+    	nSubsidy = 1.25 * COIN;
+        return nSubsidy + nFees;
+    } else if (nHeight < 525600) // first year
+    {
+    	nSubsidy = 0.625 * COIN;
+        return nSubsidy + nFees;
+    } else if (nHeight < 1051200) // 2nd year
+    {
+    	nSubsidy = 0.3125 * COIN;
+        return nSubsidy + nFees;
+    } else {
+    	nSubsidy = 0.15625 * COIN; // forever 
+        return nSubsidy + nFees;
+    }
+	}
 }
 
 static int64_t nTargetTimespan = 60;
@@ -1591,10 +1636,9 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     {
 	  return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
     }
-    else
-    {
-     return GetNextTargetRequired_(pindexLast, fProofOfStake);
-    }
+    else {
+     	  return GetNextTargetRequired_(pindexLast, fProofOfStake);
+	}
 }
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
@@ -2794,6 +2838,9 @@ bool CBlock::AcceptBlock()
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
 
+    if (IsMaintainance(nHeight) && GetTime() < (GetBlockTime() - 15)) 
+        return DoS(100, error("AcceptBlock() : chain switch point reached"));
+
     uint256 hashProof;
     if (IsProofOfWork() && nHeight > Params().LastPOWBlock()){
         return DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
@@ -3105,7 +3152,7 @@ bool CBlock::SignBlock(CWallet& wallet, int64_t nFees)
 
     if (nSearchTime > nLastCoinStakeSearchTime)
     {
-        int64_t nSearchInterval = 1;
+        int64_t nSearchInterval = nSearchTime-nLastCoinStakeSearchTime;
         if (wallet.CreateCoinStake(wallet, nBits, nSearchInterval, nFees, txCoinStake, key))
         {
             if (txCoinStake.nTime >= pindexBest->GetPastTimeLimit()+1)
@@ -4696,8 +4743,11 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 
     if (nHeight < 131400) {
 	ret = blockValue * 4 / 5; // MN Reward 80%
-    } else if (nHeight >= 131400) {
+    } else if (nHeight >= 131400 && nHeight <= 220000) {
         ret = blockValue / 2; // MN Reward 50%
+    } else {
+	ret = blockValue * 4 / 5; // MN Reward 80%
     }
+
     return ret;
 }

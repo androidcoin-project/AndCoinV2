@@ -11,6 +11,7 @@
 static const int STAKE_TIMESTAMP_MASK = 15;
 
 // MODIFIER_INTERVAL: time to elapse before new modifier is computed
+
 extern unsigned int nModifierInterval;
 
 // MODIFIER_INTERVAL_RATIO:
