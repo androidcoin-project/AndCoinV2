@@ -714,7 +714,7 @@ public:
 		return Hash_A5A(BEGIN(nVersion), END(nNonce), nNonce);
 	    }
 	    else {
-		return Hash_A5A(BEGIN(nVersion), END(nNonce), nNonce);
+		return Hash_A5A_v2(BEGIN(nVersion), END(nNonce), nNonce);
 	    }
     }
 

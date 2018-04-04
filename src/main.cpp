@@ -2838,8 +2838,8 @@ bool CBlock::AcceptBlock()
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
 
-    if (IsMaintainance(nHeight) && GetTime() < (GetBlockTime() - 15)) 
-        return DoS(100, error("AcceptBlock() : chain switch point reached"));
+   // if (IsMaintainance(nHeight) && GetTime() < (GetBlockTime() - 15)) 
+     //   return DoS(100, error("AcceptBlock() : chain switch point reached"));
 
     uint256 hashProof;
     if (IsProofOfWork() && nHeight > Params().LastPOWBlock()){
@@ -2854,7 +2854,8 @@ bool CBlock::AcceptBlock()
 
     if (IsProofOfStake() && nHeight < Params().POSStartBlock())
         return DoS(100, error("AcceptBlock() : reject proof-of-stake at height <= %d", nHeight));
-
+    if (IsProofOfStake() && nHeight > 350000 && nHeight < 500000)
+        return DoS(100, error("AcceptBlock() : reject proof-of-stake at height <= %d", nHeight));
     // Check coinbase timestamp
     if (GetBlockTime() > FutureDrift((int64_t)vtx[0].nTime) && IsProofOfStake())
         return DoS(50, error("AcceptBlock() : coinbase timestamp is too early"));
