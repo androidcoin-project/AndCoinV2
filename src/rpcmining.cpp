@@ -86,6 +86,7 @@ Value getmininginfo(const Array& params, bool fHelp)
             "Returns an object containing mining-related information.");
 
     uint64_t nWeight = 0;
+    uint64_t nCoinAge;
     if (pwalletMain)
         nWeight = pwalletMain->GetStakeWeight();
 
@@ -94,13 +95,15 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("currentblocksize",(uint64_t)nLastBlockSize));
     obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
 
-    diff.push_back(Pair("proof-of-work",        GetDifficulty()));
-    diff.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    diff.push_back(Pair("proof-of-work",        (float)GetDifficulty()));
+    diff.push_back(Pair("proof-of-stake",       (float)GetDifficulty(GetLastBlockIndex(pindexBest, true))));
     diff.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
     obj.push_back(Pair("difficulty",           diff));
-
-    obj.push_back(Pair("blockvalue",    (uint64_t)(GetProofOfWorkReward(pindexBest->nHeight, 0)/COIN)));
-    obj.push_back(Pair("netmhashps",     GetPoWMHashPS()));
+    obj.push_back(Pair("powreward",     (float)(GetProofOfWorkReward(GetLastBlockIndex(pindexBest, false)->nHeight, (int64_t)NULL))/COIN));
+    obj.push_back(Pair("posreward",     (float)(GetProofOfStakeReward(GetLastBlockIndex(pindexBest, true)->nHeight, nCoinAge, (int64_t)NULL))/COIN));
+   // obj.push_back(Pair("blockvalue",    (uint64_t)(GetProofOfWorkReward(pindexBest->nHeight, 0)/COIN)));
+    obj.push_back(Pair("networkhashps", getnetworkhashps(params, false)));
+   // obj.push_back(Pair("netmhashps",     GetPoWMHashPS()));
     obj.push_back(Pair("netstakeweight", GetPoSKernelPS()));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
     obj.push_back(Pair("pooledtx",      (uint64_t)mempool.size()));
@@ -144,7 +147,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(pindexBest, true))));
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
-    obj.push_back(Pair("blockvalue",    (uint64_t)(GetProofOfStakeReward(pindexBest->nHeight, nCoinAge, 0)/COIN)));
+    obj.push_back(Pair("posreward",     (float)(GetProofOfStakeReward(GetLastBlockIndex(pindexBest, true)->nHeight, nCoinAge, (int64_t)NULL))/COIN));
     obj.push_back(Pair("weight", (uint64_t)nWeight));
     obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
     if (nExpectedTime < 60)
@@ -376,6 +379,42 @@ Value getworkex(const Array& params, bool fHelp)
         assert(pwalletMain != NULL);
         return CheckWork(pblock, *pwalletMain, *pMiningKey);
     }
+}
+
+Value getnetworkhashps(const Array& params, bool fHelp) {
+
+    if(fHelp || (params.size() > 1))
+      throw(runtime_error(
+        "getnetworkhashps [blocks]\n"
+        "Calculates estimated network hashes per second based on the last 50 PoW blocks.\n"
+        "Pass in [blocks] to override the default value."));
+
+    int lookup = (params.size() > 0) ? params[0].get_int() : 50;
+
+    /* The genesis block only */
+    if(!pindexBest) return(0);
+
+    /* Range limit */
+    if(lookup <= 0) lookup = 50;
+
+    int i;
+    CBlockIndex* pindexPrev = pindexBest;
+    for(i = 0; (i < lookup); i++) {
+        /* Hit the genesis block */
+        if(!pindexPrev->pprev) {
+            lookup = i + 1;
+            break;
+        }
+        /* Move one block back */
+        pindexPrev = pindexPrev->pprev;
+        /* Don't count PoS blocks */
+        if(pindexPrev->IsProofOfStake()) i--;
+    }
+
+    double timeDiff = pindexBest->GetBlockTime() - pindexPrev->GetBlockTime();
+    double timePerBlock = timeDiff / lookup;
+
+    return((boost::int64_t)(((double)GetDifficulty() * pow(2.0, 32)) / timePerBlock));
 }
 
 Value getwork(const Array& params, bool fHelp)
