@@ -46,10 +46,14 @@ map<uint256, CBlockIndex*> mapBlockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
+CBigNum bnProofOfStakeLimitV2(~uint256(0) >> 48);
 
 unsigned int nStakeMinAge = 24 * 60 * 60; // 24 hours
 unsigned int nStakeMaxAge = 48 * 24 * 60 * 60; // 48 Days.
 unsigned int nModifierInterval = 2 * 60; // time to elapse before new modifier is computed
+
+static const int64_t nTargetSpacingWork = 60; // 1 min PoW block spacing
+static const int64_t nTargetSpacingV2Work = 2 * nTargetSpacingWork;   // 2 min
 
 int nCoinbaseMaturity = 100;
 CBlockIndex* pindexGenesisBlock = NULL;
@@ -1351,7 +1355,10 @@ void static PruneOrphanBlocks()
 
 static CBigNum GetProofOfStakeLimit(int nHeight)
 {
-    return bnProofOfStakeLimit;
+    if (IsProtocolV2(nHeight))
+        return bnProofOfStakeLimitV2;
+    else
+        return bnProofOfStakeLimit;
 }
 
 // miner's coin base reward
@@ -1370,69 +1377,53 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
     int64_t nSubsidy = 0 * COIN;
     if (nHeight < 210000) 
     {
-    if (nHeight == nHeightInitialBlock)
-    {
-        return nSubsidyInitialBlock + nFees;
-    }
-    if (nHeight < nHeightAntiInstant)
-    {
-    	nSubsidy = 1 * COIN;
-        return nSubsidy + nFees;
-    }        
-    if (nHeight < 43800) // first month
-    {
-        nSubsidy = nSubsidyGenesisBlock;
-        return nSubsidy + nFees;
-    }
-    if (nHeight < 87600) // 2 month
-    {
-        nSubsidy = 2.5 * COIN;
-        return nSubsidy + nFees;
-    }
-    if (nHeight < 131400) // 3 month
-    {
-        nSubsidy = 1.25 * COIN;
-        return nSubsidy + nFees;        	
-    } 
-    if (nHeight < 262800) // 6 month
-    {
-        nSubsidy = 0.625 * COIN;
-        return nSubsidy + nFees;
-    }
-    if (nHeight < 394200) // 9 month
-    {
-        nSubsidy = 0.3125 * COIN;
-        return nSubsidy + nFees;
-    }
-    if (nHeight < 525600) // 1 year
-    {
-       nSubsidy = 0.15625 * COIN;
-       return nSubsidy + nFees;        	
+    	if (nHeight == nHeightInitialBlock)
+    	{
+        	nSubsidy = nSubsidyInitialBlock;
+    	}
+    	if (nHeight < nHeightAntiInstant)
+    	{
+    		nSubsidy = 1 * COIN;
+    	}        
+    	if (nHeight < 43800) // first month
+    	{
+        	nSubsidy = nSubsidyGenesisBlock;
+    	}
+    	if (nHeight < 87600) // 2 month
+    	{
+        	nSubsidy = 2.5 * COIN;
+    	}
+    	if (nHeight < 131400) // 3 month
+    	{
+        	nSubsidy = 1.25 * COIN;
+    	} 
+    	if (nHeight < 262800) // 6 month
+    	{
+        	nSubsidy = 0.625 * COIN;
+    	}
+    	if (nHeight < 394200) // 9 month
+    	{
+        	nSubsidy = 0.3125 * COIN;
+    	}
+    	if (nHeight < 525600) // 1 year
+    	{
+       		nSubsidy = 0.15625 * COIN;
+    	} else {
+        	nSubsidy = nSubsidyBase;
+        }
     } else {
-        nSubsidy = nSubsidyBase; // 0.078125 till last POW
-        return nSubsidy + nFees;
-    }
-	} else {
 
-    if (nHeight < 262800) 
-    {
-        nSubsidy = 0.625 * COIN;
-        return nSubsidy + nFees;
-    }
-    else if (nHeight < 394200) 
-    {
-        nSubsidy = 0.3125 * COIN;
-        return nSubsidy + nFees;
-    }
-    else if (nHeight < 525600) 
-    {
-       nSubsidy = 0.15625 * COIN;
-       return nSubsidy + nFees;        	
-    } else {
-        nSubsidy = nSubsidyBase; // 0.078125 till last POW
-        return nSubsidy + nFees;
-    }
-	}
+    	if (nHeight < 262800) {
+        	nSubsidy = 0.625 * COIN;
+    	} else if (nHeight >= 262800 && nHeight < 394200) {
+        	nSubsidy = 0.3125 * COIN;
+    	} else if (nHeight >= 394200 && nHeight < 525600) {
+       		nSubsidy = 0.15625 * COIN;        	
+    	} else {
+        	nSubsidy = nSubsidyBase; // 0.078125 till last POW
+    	}
+     }
+    return nSubsidy + nFees;
 }
 
 // miner's coin stake reward
@@ -1485,10 +1476,17 @@ int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees)
     }
 	}
 }
-
-static int64_t nTargetTimespan = 60;
-static const int64_t nTargetSpacing = 60; // 1 minute
-static const int64_t nInterval = nTargetTimespan / nTargetSpacing;
+int64_t GetProofOfStakeReward_v2(int nHeight, int64_t nFees)
+{
+    int64_t nSubsidy;
+    if (nHeight > 350000) 
+        nSubsidy = 0.15625 * COIN;
+    else 
+    	nSubsidy = 0.15625 * COIN;  
+        
+    return nSubsidy + nFees;
+    
+}
 
 // ppcoin: find last block index up to pindex
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
@@ -1515,12 +1513,20 @@ const CBlockIndex* GetLastPoWBlockIndex(const CBlockIndex* pindex)
     }
     return pindex;
 }
+
+#define HEIGHT_DIFF_ADJ 400000
+int64_t GetTargetSpacingWork(int nHeight)
+{
+    return ( (nHeight >= HEIGHT_DIFF_ADJ) ? 
+        nTargetSpacingV2Work : nTargetSpacingWork );
+}
+
 unsigned int GetNextTargetRequired_(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
     CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
 
 
-
+    int64_t nTargetTimespan = 60;
 
     if (pindexLast == NULL)
         return bnTargetLimit.GetCompact(); // genesis block
@@ -1570,13 +1576,16 @@ unsigned int GetNextTargetRequired_(const CBlockIndex* pindexLast, bool fProofOf
 
     return bnNew.GetCompact();
 }
+
 unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
     CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
 
-    int64_t retargetTimespan = nTargetTimespan;
+    int64_t retargetTimespan = 60;
+    int64_t nTargetSpacing = 60; // 1 minute
+    int64_t nInterval = retargetTimespan / nTargetSpacing;
     int64_t retargetInterval = nInterval;
-    
+ 
     if (pindexLast == NULL)
         return bnTargetLimit.GetCompact(); // genesis block
 
@@ -1586,6 +1595,7 @@ unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProof
     const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
     if (pindexPrevPrev->pprev == NULL)
         return bnTargetLimit.GetCompact(); // second block
+    
     // Only change once per interval
     if ((pindexPrev->nHeight+1) % retargetInterval != 0)
     {
@@ -1625,20 +1635,125 @@ unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProof
     return bnNew.GetCompact();
 }
 
+#define MQW_TIME_COEFF 1.0
+#define MQW_AVER_COEFF 1.0
+#define MQW_EXPON_COEFF 0.15
+#define WEIGHT_SCALE 100.0
+#define WEIGHT_MIN 0.005
+#define WEIGHT_MAX 0.8
+unsigned int andcoinQuantumWave(const CBlockIndex* pindexLast, bool fProofOfStake)
+{
+    /* andcoin Quantum Wave (MQW) for AND - Coin andcoin, written by Joe Lao */
+    CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
+    int64_t nActualBlockSpacing, nActualTimeSpanMQW;
+    int64_t nAveragedBlocks = 1, nTotPastBlocks = 15;
+    CBigNum bnAverage;
+    CBigNum bnAveragePrev;
+
+    if (pindexLast == NULL) {
+        return bnTargetLimit.GetCompact(); // genesis block
+    }
+
+    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
+
+    if (pindexPrev->pprev == NULL) {
+        return bnTargetLimit.GetCompact(); // first block
+    }
+
+    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
+
+    if (pindexPrevPrev->pprev == NULL) {
+        return bnTargetLimit.GetCompact(); // second block
+    }
+
+    nActualBlockSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+
+    if(nActualBlockSpacing < 0) {
+        nActualBlockSpacing = 1;
+    }
+
+    nActualTimeSpanMQW = nActualBlockSpacing;
+    double fw = ( 1. - exp_n(-double(nActualBlockSpacing) * MQW_EXPON_COEFF*MQW_TIME_COEFF / double(GetTargetSpacingWork(pindexLast->nHeight+1))) ) * MQW_AVER_COEFF;
+    if (fw < WEIGHT_MIN) {
+        fw = WEIGHT_MIN;
+    } else if (fw > WEIGHT_MAX) {
+        fw = WEIGHT_MAX;
+    }
+
+    bnAverage.SetCompact(pindexPrev->nBits);
+    bnAverage *= ((int64_t)(fw * WEIGHT_SCALE));
+
+    int64_t nWeightTot = ((int64_t)(fw * WEIGHT_SCALE));
+    double rWeight = 1.-fw;
+
+    for(unsigned int i = 1; pindexPrevPrev; i++)
+    {
+        if (i >= nTotPastBlocks) {
+            break;
+        }
+
+        pindexPrev = pindexPrevPrev;
+        pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
+
+        if (pindexPrevPrev == NULL) { assert(pindexPrev); break; }
+        nActualBlockSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+
+        if (nActualBlockSpacing > 0)
+        {
+            nAveragedBlocks++;
+            nActualTimeSpanMQW += nActualBlockSpacing;
+            fw = ( 1. - exp_n(-double(nActualBlockSpacing) * MQW_EXPON_COEFF*MQW_TIME_COEFF / double(GetTargetSpacingWork(pindexLast->nHeight+1))) ) * MQW_AVER_COEFF;
+
+            if (fw < WEIGHT_MIN) {
+                fw = WEIGHT_MIN;
+            } else if (fw > WEIGHT_MAX) {
+                fw = WEIGHT_MAX;
+            }
+
+            bnAverage += (CBigNum().SetCompact(pindexPrev->nBits)) * ((int64_t)(fw*rWeight*WEIGHT_SCALE));
+            nWeightTot += ((int64_t)(fw * rWeight * WEIGHT_SCALE));
+
+            rWeight *= (1.-fw);
+        }
+    }
+
+    bnAverage /= nWeightTot;
+
+    CBigNum bnNew(bnAverage);
+
+    int64_t nTargetTimeSpanMQW = nAveragedBlocks * GetTargetSpacingWork(pindexLast->nHeight+1);
+
+    if (nActualTimeSpanMQW < nTargetTimeSpanMQW / 3) {
+        nActualTimeSpanMQW = nTargetTimeSpanMQW / 3;
+    }
+
+    if (nActualTimeSpanMQW > nTargetTimeSpanMQW * 3){
+        nActualTimeSpanMQW = nTargetTimeSpanMQW * 3;
+    }
+
+    // Retarget
+    bnNew *= nActualTimeSpanMQW;
+    bnNew /= nTargetTimeSpanMQW;
+
+    if (bnNew > bnTargetLimit){
+        bnNew = bnTargetLimit;
+    }
+
+    return bnNew.GetCompact();
+}
+
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
     // use old difficulty for 1999 block
-    if (pindexLast->nHeight+1 < 1999)
-    {
+    if (pindexLast->nHeight+1 < 1999) {
         return GetNextTargetRequired_(pindexLast, fProofOfStake);
-    } 
-    if (pindexLast->nHeight+1 < 2140)
-    {
-	  return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
+    } else if (pindexLast->nHeight+1 < 2140) {
+	return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
+    } else if (pindexLast->nHeight+1 < 350000) {
+     	return GetNextTargetRequired_(pindexLast, fProofOfStake);
+    } else {
+     	return andcoinQuantumWave(pindexLast, fProofOfStake);
     }
-    else {
-     	  return GetNextTargetRequired_(pindexLast, fProofOfStake);
-	}
 }
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
@@ -2182,7 +2297,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         if (!vtx[1].GetCoinAge(txdb, pindex->pprev, nCoinAge))
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString());
 
-        int64_t nCalculatedStakeReward = GetProofOfStakeReward(pindex->nHeight, nCoinAge, nFees);
+        int64_t nCalculatedStakeReward = (IsProtocolV2(pindex->nHeight)) ? GetProofOfStakeReward_v2(pindex->nHeight, nFees) : GetProofOfStakeReward(pindex->nHeight, nCoinAge, nFees);
 
         if (nStakeReward > nCalculatedStakeReward)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
@@ -2534,7 +2649,7 @@ bool CTransaction::GetCoinAge(CTxDB& txdb, const CBlockIndex* pindexPrev, uint64
 {
     CBigNum bnCentSecond = 0;  // coin age in the unit of cent-seconds
     nCoinAge = 0;
-    int nStakeMinConfirmations = 720;
+  //  int nStakeMinConfirmations = 720;
 
     if (IsCoinBase())
         return true;
@@ -2823,9 +2938,10 @@ bool CBlock::AcceptBlock()
     AssertLockHeld(cs_main);
 
     // Remove for BIP-0034 FORK
-    if (nVersion > CURRENT_VERSION)
-        return DoS(100, error("AcceptBlock() : reject unknown block version %d", nVersion));
-
+    if (!IsProtocolV2(nTime)) {
+        if (nVersion > CURRENT_VERSION)
+            return DoS(100, error("AcceptBlock() : reject unknown block version %d", nVersion));
+}
     // Check for duplicate
     uint256 hash = GetHash();
     if (mapBlockIndex.count(hash))
@@ -2841,6 +2957,11 @@ bool CBlock::AcceptBlock()
    // if (IsMaintainance(nHeight) && GetTime() < (GetBlockTime() - 15)) 
      //   return DoS(100, error("AcceptBlock() : chain switch point reached"));
 
+    if (IsProtocolV2(nHeight) && nVersion < 3)
+        return DoS(100, error("AcceptBlock() : reject too old nVersion = %d", nVersion));
+    else if (!IsProtocolV2(nHeight) && nVersion > 2)
+        return DoS(100, error("AcceptBlock() : reject too new nVersion = %d", nVersion));
+
     uint256 hashProof;
     if (IsProofOfWork() && nHeight > Params().LastPOWBlock()){
         return DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
@@ -2854,8 +2975,8 @@ bool CBlock::AcceptBlock()
 
     if (IsProofOfStake() && nHeight < Params().POSStartBlock())
         return DoS(100, error("AcceptBlock() : reject proof-of-stake at height <= %d", nHeight));
-    if (IsProofOfStake() && nHeight > 350000 && nHeight < 500000)
-        return DoS(100, error("AcceptBlock() : reject proof-of-stake at height <= %d", nHeight));
+   // if (IsProofOfStake() && nHeight > 350000 && nHeight < 352000)
+     //   return DoS(100, error("AcceptBlock() : reject proof-of-stake at height <= %d", nHeight));
     // Check coinbase timestamp
     if (GetBlockTime() > FutureDrift((int64_t)vtx[0].nTime) && IsProofOfStake())
         return DoS(50, error("AcceptBlock() : coinbase timestamp is too early"));

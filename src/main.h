@@ -20,6 +20,8 @@ class CValidationState;
 
 #define START_MASTERNODE_PAYMENTS_TESTNET 1521975600
 #define START_MASTERNODE_PAYMENTS 1521975600 // Sunday, March 25, 2018 6:00:00 PM GMT+07:00
+#define START_POW_MASTERNODE_PAYMENTS_TESTNET 1524589200 //April 25, 2018 12:00:00 AM GMT+07:00
+#define START_POW_MASTERNODE_PAYMENTS 1524589200
 
 static const int64_t DARKSEND_COLLATERAL = (0.01*COIN);
 static const int64_t DARKSEND_POOL_MAX = (9999.99*COIN);
@@ -73,10 +75,17 @@ static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20
 static const int64_t DRIFT = 600;
 inline int64_t FutureDrift(int64_t nTime) { return nTime + DRIFT; }
 
+inline bool IsProtocolV2(int nHeight)
+{
+    return (nHeight > 350000);
+}
+
+int64_t GetTargetSpacingWork(int nHeight);
+
 /** "reject" message codes **/
 static const unsigned char REJECT_INVALID = 0x10;
 
-inline int64_t GetMNCollateral(int nHeight) { return 20000; }
+inline int64_t GetMNCollateral(int nHeight) { return nHeight <= 352000 ? 20000 : 30000; }
 
 inline bool IsMaintainance(int nHeight) { return (nHeight == HEIGHT_MAINTAINANCE); }
 inline bool IsMaintainanceOff(int nHeight) { return (nHeight > HEIGHT_MAINTAINANCE); }
@@ -158,6 +167,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
 const CBlockIndex* GetLastPoWBlockIndex(const CBlockIndex* pindex);
 int64_t GetProofOfWorkReward(int nHeight, int64_t nFees);
 int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees);
+int64_t GetProofOfStakeReward_v2(int nHeight, int64_t nFees);
 bool IsInitialBlockDownload();
 bool IsConfirmedInNPrevBlocks(const CTxIndex& txindex, const CBlockIndex* pindexFrom, int nMaxDepth, int& nActualDepth);
 std::string GetWarnings(std::string strFor);
@@ -635,7 +645,7 @@ class CBlock
 {
 public:
     // header
-    static const int CURRENT_VERSION = 2;
+    static const int CURRENT_VERSION = 3;
     int nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
@@ -650,6 +660,7 @@ public:
     std::vector<unsigned char> vchBlockSig;
 
     // memory only
+    mutable CScript payee;
     mutable std::vector<uint256> vMerkleTree;
 
     // Denial-of-service detection:
@@ -695,6 +706,7 @@ public:
         vtx.clear();
         vchBlockSig.clear();
         vMerkleTree.clear();
+        payee = CScript();
         nDoS = 0;
     }
 

@@ -352,8 +352,36 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, int64_t* pFe
         if (fDebug && GetBoolArg("-printpriority", false))
             LogPrintf("CreateNewBlock(): total size %u\n", nBlockSize);
 // >AND<
-        if (!fProofOfStake)
-            pblock->vtx[0].vout[0].nValue = GetProofOfWorkReward(pindexPrev->nHeight + 1, nFees);
+        if (!fProofOfStake) {
+	   
+            CScript payeeScript;
+            int64_t nReward = GetProofOfWorkReward(pindexPrev->nHeight + 1, nFees);
+            bool ENABLE_POW_MASTERNODE = false; // note was false, set true to test
+
+            if ( Params().NetworkID() == CChainParams::TESTNET ){
+               if (GetTime() > START_POW_MASTERNODE_PAYMENTS_TESTNET ){
+                  ENABLE_POW_MASTERNODE = true;
+               }
+           }else{
+               if (GetTime() > START_POW_MASTERNODE_PAYMENTS){
+                  ENABLE_POW_MASTERNODE = true;
+                }
+           }
+            if (ENABLE_POW_MASTERNODE && SelectMasternodePayee(payeeScript)) {               int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);  
+                pblock->vtx[0].vout.resize(2);
+                pblock->vtx[0].vout[1].scriptPubKey = payeeScript;
+                pblock->vtx[0].vout[1].nValue = masternodePayment;
+		nReward -= masternodePayment;
+                pblock->vtx[0].vout[0].nValue = nReward;
+
+                CTxDestination txDest;
+                ExtractDestination(payeeScript, txDest);
+                CAndcoincoinAddress address(txDest);
+                LogPrintf("%s: Masternode payment to %s (pow)\n", __func__, address.ToString());
+            } else {
+                pblock->vtx[0].vout[0].nValue = nReward;
+            }
+	  }
 
         if (pFees)
             *pFees = nFees;

@@ -4,6 +4,7 @@
 
 #include "masternode-payments.h"
 #include "masternodeman.h"
+#include "main.h"
 #include "darksend.h"
 #include "util.h"
 #include "sync.h"
@@ -150,6 +151,18 @@ bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee, CTxIn&
         if(winner.nBlockHeight == nBlockHeight) {
             payee = winner.payee;
             vin = winner.vin;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool CMasternodePayments::GetBlockPayee_(int nBlockHeight, CScript& payee)
+{
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
+        if(winner.nBlockHeight == nBlockHeight) {
+            payee = winner.payee;
             return true;
         }
     }
@@ -362,4 +375,38 @@ bool CMasternodePayments::SetPrivKey(std::string strPrivKey)
     } else {
         return false;
     }
+}
+
+bool MasternodePaymentsEnabled()
+{
+    bool result = false;
+    if (Params().NetworkID() == CChainParams::TESTNET) {
+        if (GetTime() > START_MASTERNODE_PAYMENTS_TESTNET) {
+            result = true;
+        }
+    } else {
+        if (GetTime() > START_MASTERNODE_PAYMENTS) {
+            result = true;
+        }
+    }
+    return result;
+}
+
+bool SelectMasternodePayee(CScript &payeeScript)
+{
+    bool result = false;
+    
+    if (MasternodePaymentsEnabled()) {
+        //spork
+        if (!masternodePayments.GetBlockPayee_(pindexBest->nHeight+1, payeeScript)) {
+            CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
+            if (winningNode) {
+                payeeScript = GetScriptForDestination(winningNode->pubkey.GetID());
+                result = true;
+            } else {
+                LogPrintf("%s: Failed to detect masternode to pay\n", __func__);
+            }
+        }
+    }
+    return result;
 }

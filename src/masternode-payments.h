@@ -76,7 +76,7 @@ private:
 public:
 
     CMasternodePayments() {
-        strMainPubKey = "";
+        strMainPubKey = "043E2A1A6C70F60F09E2473FE2218602AF6BD0CEF18FA1E522A44DC6EB9A24788DBA23C18E835367A2D974924B44761C93405578057B2AF76D389F5B3825DC6CAB";
         enabled = false;
     }
 
@@ -100,7 +100,9 @@ public:
     int GetMinMasternodePaymentsProto();
 
     bool GetBlockPayee(int nBlockHeight, CScript& payee, CTxIn& vin);
+    bool GetBlockPayee_(int nBlockHeight, CScript& payee);
 };
 
+bool SelectMasternodePayee(CScript &payeeScript);
 
 #endif

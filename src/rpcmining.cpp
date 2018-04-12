@@ -11,7 +11,8 @@
 #include "init.h"
 #include "miner.h"
 #include "kernel.h"
-
+#include "masternodeman.h"
+#include "masternode-payments.h"
 
 
 #include <boost/assign/list_of.hpp>
@@ -87,6 +88,7 @@ Value getmininginfo(const Array& params, bool fHelp)
 
     uint64_t nWeight = 0;
     uint64_t nCoinAge;
+    
     if (pwalletMain)
         nWeight = pwalletMain->GetStakeWeight();
 
@@ -100,7 +102,7 @@ Value getmininginfo(const Array& params, bool fHelp)
     diff.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
     obj.push_back(Pair("difficulty",           diff));
     obj.push_back(Pair("powreward",     (float)(GetProofOfWorkReward(GetLastBlockIndex(pindexBest, false)->nHeight, (int64_t)NULL))/COIN));
-    obj.push_back(Pair("posreward",     (float)(GetProofOfStakeReward(GetLastBlockIndex(pindexBest, true)->nHeight, nCoinAge, (int64_t)NULL))/COIN));
+    obj.push_back(Pair("posreward",     (float)(GetProofOfStakeReward_v2(GetLastBlockIndex(pindexBest, true)->nHeight, (int64_t)NULL))/COIN));
    // obj.push_back(Pair("blockvalue",    (uint64_t)(GetProofOfWorkReward(pindexBest->nHeight, 0)/COIN)));
     obj.push_back(Pair("networkhashps", getnetworkhashps(params, false)));
    // obj.push_back(Pair("netmhashps",     GetPoWMHashPS()));
@@ -126,7 +128,8 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     uint64_t nWeight = 0;
     uint64_t nExpectedTime = 0;
-    uint64_t nCoinAge;
+    
+    
     
     if (pwalletMain)
         nWeight = pwalletMain->GetStakeWeight();
@@ -147,7 +150,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(pindexBest, true))));
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
-    obj.push_back(Pair("posreward",     (float)(GetProofOfStakeReward(GetLastBlockIndex(pindexBest, true)->nHeight, nCoinAge, (int64_t)NULL))/COIN));
+    obj.push_back(Pair("posreward",     (float)(GetProofOfStakeReward_v2(GetLastBlockIndex(pindexBest, true)->nHeight, (int64_t)NULL))/COIN));
     obj.push_back(Pair("weight", (uint64_t)nWeight));
     obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
     if (nExpectedTime < 60)
@@ -576,8 +579,8 @@ Value getblocktemplate(const Array& params, bool fHelp)
     if (vNodes.empty())
         throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Andcoin is not connected!");
 
-    //if (IsInitialBlockDownload())
-    //    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Andcoin is downloading blocks...");
+    if (IsInitialBlockDownload())
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Andcoin is downloading blocks...");
 
     if (pindexBest->nHeight >= Params().LastPOWBlock())
         throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
@@ -687,6 +690,22 @@ Value getblocktemplate(const Array& params, bool fHelp)
     result.push_back(Pair("curtime", (int64_t)pblock->nTime));
     result.push_back(Pair("bits", strprintf("%08x", pblock->nBits)));
     result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
+    Object aMasternode;
+    if (pblock->payee != CScript()) {
+        CTxDestination address1;
+        ExtractDestination(pblock->payee, address1);
+        CAndcoincoinAddress address2(address1);
+        result.push_back(Pair("payee", address2.ToString().c_str()));
+        result.push_back(Pair("payee_amount", (int64_t)pblock->vtx[0].vout[1].nValue));
+        aMasternode.push_back(Pair("payee", address2.ToString().c_str()));
+        aMasternode.push_back(Pair("script", HexStr(pblock->vtx[0].vout[1].scriptPubKey)));
+        aMasternode.push_back(Pair("amount", (int64_t)pblock->vtx[0].vout[1].nValue));
+    }
+    else
+    {
+        result.push_back(Pair("payee", ""));
+        result.push_back(Pair("payee_amount", ""));
+    }
 
     return result;
 }
