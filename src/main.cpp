@@ -1760,7 +1760,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
         return GetNextTargetRequired_(pindexLast, fProofOfStake);
     } else if (pindexLast->nHeight+1 < 2140) {
 	return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
-    } else if (pindexLast->nHeight+1 < 350000) {
+    } else if (pindexLast->nHeight+1 <= 350000) {
      	return GetNextTargetRequired_(pindexLast, fProofOfStake);
     } else {
      	return andcoinQuantumWave(pindexLast, fProofOfStake);
