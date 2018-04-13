@@ -1377,40 +1377,48 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
     int64_t nSubsidy = 0 * COIN;
     if (nHeight < 210000) 
     {
-    	if (nHeight == nHeightInitialBlock)
-    	{
-        	nSubsidy = nSubsidyInitialBlock;
-    	}
-    	if (nHeight < nHeightAntiInstant)
-    	{
-    		nSubsidy = 1 * COIN;
-    	}        
-    	if (nHeight < 43800) // first month
-    	{
-        	nSubsidy = nSubsidyGenesisBlock;
-    	}
-    	if (nHeight < 87600) // 2 month
-    	{
-        	nSubsidy = 2.5 * COIN;
-    	}
-    	if (nHeight < 131400) // 3 month
-    	{
-        	nSubsidy = 1.25 * COIN;
-    	} 
-    	if (nHeight < 262800) // 6 month
-    	{
-        	nSubsidy = 0.625 * COIN;
-    	}
-    	if (nHeight < 394200) // 9 month
-    	{
-        	nSubsidy = 0.3125 * COIN;
-    	}
-    	if (nHeight < 525600) // 1 year
-    	{
-       		nSubsidy = 0.15625 * COIN;
-    	} else {
-        	nSubsidy = nSubsidyBase;
-        }
+    if (nHeight == nHeightInitialBlock)
+    {
+        return nSubsidyInitialBlock + nFees;
+    }
+    if (nHeight < nHeightAntiInstant)
+    {
+    	nSubsidy = 1 * COIN;
+        return nSubsidy + nFees;
+    }        
+    if (nHeight < 43800) // first month
+    {
+        nSubsidy = nSubsidyGenesisBlock;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 87600) // 2 month
+    {
+        nSubsidy = 2.5 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 131400) // 3 month
+    {
+        nSubsidy = 1.25 * COIN;
+        return nSubsidy + nFees;        	
+    } 
+    if (nHeight < 262800) // 6 month
+    {
+        nSubsidy = 0.625 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 394200) // 9 month
+    {
+        nSubsidy = 0.3125 * COIN;
+        return nSubsidy + nFees;
+    }
+    if (nHeight < 525600) // 1 year
+    {
+       nSubsidy = 0.15625 * COIN;
+       return nSubsidy + nFees;        	
+    } else {
+        nSubsidy = nSubsidyBase; // 0.078125 till last POW
+        return nSubsidy + nFees;
+    }
     } else {
 
     	if (nHeight < 262800) {
@@ -1422,8 +1430,9 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
     	} else {
         	nSubsidy = nSubsidyBase; // 0.078125 till last POW
     	}
+	return nSubsidy + nFees;
      }
-    return nSubsidy + nFees;
+    
 }
 
 // miner's coin stake reward
@@ -1462,11 +1471,13 @@ int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees)
     {
     	nSubsidy = 1.25 * COIN;
         return nSubsidy + nFees;
-    } else if (nHeight < 525600) // first year
+    }
+    if (nHeight < 525600) // first year
     {
     	nSubsidy = 0.625 * COIN;
         return nSubsidy + nFees;
-    } else if (nHeight < 1051200) // 2nd year
+    }
+    if (nHeight < 1051200) // 2nd year
     {
     	nSubsidy = 0.3125 * COIN;
         return nSubsidy + nFees;
