@@ -367,7 +367,8 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, int64_t* pFe
                   ENABLE_POW_MASTERNODE = true;
                 }
            }
-            if (ENABLE_POW_MASTERNODE && SelectMasternodePayee(payeeScript)) {               int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);  
+            if (ENABLE_POW_MASTERNODE && SelectMasternodePayee(payeeScript)) {               
+		int64_t masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, nReward);  
                 pblock->vtx[0].vout.resize(2);
                 pblock->vtx[0].vout[1].scriptPubKey = payeeScript;
                 pblock->vtx[0].vout[1].nValue = masternodePayment;
@@ -572,14 +573,14 @@ void ThreadStakeMiner(CWallet *pwallet)
         while (pwallet->IsLocked())
         {
             nLastCoinStakeSearchInterval = 0;
-            MilliSleep(1000);
+            MilliSleep(10000);
         }
 
         while (vNodes.size() < 1 || IsInitialBlockDownload())
         {
             nLastCoinStakeSearchInterval = 0;
             fTryToSync = true;
-            MilliSleep(1000);
+            MilliSleep(10000);
         }
 
         if (fTryToSync)
@@ -606,7 +607,7 @@ void ThreadStakeMiner(CWallet *pwallet)
             SetThreadPriority(THREAD_PRIORITY_NORMAL);
             CheckStake(pblock.get(), *pwallet);
             SetThreadPriority(THREAD_PRIORITY_LOWEST);
-            MilliSleep(500);
+            MilliSleep(5000);
         }
         else
             MilliSleep(nMinerSleep);

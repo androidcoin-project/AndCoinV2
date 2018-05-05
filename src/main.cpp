@@ -47,7 +47,7 @@ set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 CBigNum bnProofOfStakeLimitV2(~uint256(0) >> 48);
-
+CBigNum bnProofOfStakeLimitV3(~uint256(0) >> 36);
 unsigned int nStakeMinAge = 24 * 60 * 60; // 24 hours
 unsigned int nStakeMaxAge = 48 * 24 * 60 * 60; // 48 Days.
 unsigned int nModifierInterval = 2 * 60; // time to elapse before new modifier is computed
@@ -1355,8 +1355,10 @@ void static PruneOrphanBlocks()
 
 static CBigNum GetProofOfStakeLimit(int nHeight)
 {
-    if (IsProtocolV2(nHeight))
+    if (nHeight > 350000 && nHeight <= 420000)
         return bnProofOfStakeLimitV2;
+    else if (nHeight > 420000)
+        return bnProofOfStakeLimitV3;
     else
         return bnProofOfStakeLimit;
 }
@@ -1423,12 +1425,12 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees)
 
     	if (nHeight < 262800) {
         	nSubsidy = 0.625 * COIN;
-    	} else if (nHeight >= 262800 && nHeight < 394200) {
+    	} else if (nHeight >= 262800 && nHeight < 420000) {
         	nSubsidy = 0.3125 * COIN;
-    	} else if (nHeight >= 394200 && nHeight < 525600) {
-       		nSubsidy = 0.15625 * COIN;        	
+    	} else if (nHeight >= 420000 && nHeight < 525600) {
+       		nSubsidy = 1 * COIN;        	
     	} else {
-        	nSubsidy = nSubsidyBase; // 0.078125 till last POW
+        	nSubsidy = 1 * COIN; // 0.078125 till last POW
     	}
 	return nSubsidy + nFees;
      }
@@ -1490,10 +1492,10 @@ int64_t GetProofOfStakeReward(int nHeight, int64_t nCoinAge, int64_t nFees)
 int64_t GetProofOfStakeReward_v2(int nHeight, int64_t nFees)
 {
     int64_t nSubsidy;
-    if (nHeight > 350000) 
+    if (nHeight > 350000 && nHeight <= 420000) 
         nSubsidy = 0.15625 * COIN;
     else 
-    	nSubsidy = 0.15625 * COIN;  
+    	nSubsidy = 1 * COIN;  
         
     return nSubsidy + nFees;
     
@@ -4878,8 +4880,10 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 	ret = blockValue * 4 / 5; // MN Reward 80%
     } else if (nHeight >= 131400 && nHeight <= 220000) {
         ret = blockValue / 2; // MN Reward 50%
-    } else {
+    } else if (nHeight > 220000 && nHeight <= 400000) {
 	ret = blockValue * 4 / 5; // MN Reward 80%
+    } else {
+	ret = blockValue / 2; // MN Reward 50%
     }
 
     return ret;

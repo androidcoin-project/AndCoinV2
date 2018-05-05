@@ -80,12 +80,21 @@ inline bool IsProtocolV2(int nHeight)
     return (nHeight > 350000);
 }
 
+
 int64_t GetTargetSpacingWork(int nHeight);
 
 /** "reject" message codes **/
 static const unsigned char REJECT_INVALID = 0x10;
 
-inline int64_t GetMNCollateral(int nHeight) { return nHeight <= 352000 ? 20000 : 30000; }
+inline int64_t GetMNCollateral(int nHeight) 
+{ 
+    if (nHeight > 352000 && nHeight<= 400000)
+        return 30000;
+    else if (nHeight > 400000)
+        return 10000;
+    else
+        return 20000;
+} 
 
 inline bool IsMaintainance(int nHeight) { return (nHeight == HEIGHT_MAINTAINANCE); }
 inline bool IsMaintainanceOff(int nHeight) { return (nHeight > HEIGHT_MAINTAINANCE); }
